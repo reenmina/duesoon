@@ -1,23 +1,40 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
-class AddTaskScreen extends StatefulWidget {
-  final String userId;
+class EditTaskScreen extends StatefulWidget {
+  final String id;
+  final String title;
+  final String status;
+  final String deadline;
 
-  const AddTaskScreen({super.key, required this.userId});
+  const EditTaskScreen({
+    super.key,
+    required this.id,
+    required this.title,
+    required this.status,
+    required this.deadline,
+  });
 
   @override
-  State<AddTaskScreen> createState() => _AddTaskScreenState();
+  State<EditTaskScreen> createState() => _EditTaskScreenState();
 }
 
-class _AddTaskScreenState extends State<AddTaskScreen> {
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController deadlineController = TextEditingController();
+class _EditTaskScreenState extends State<EditTaskScreen> {
+  late TextEditingController titleController;
+  late TextEditingController deadlineController;
+  late String status;
 
-  String status = "Pending";
   bool isLoading = false;
 
-  // ================= DATE PICKER =================
+  @override
+  void initState() {
+    super.initState();
+    titleController = TextEditingController(text: widget.title);
+    deadlineController = TextEditingController(text: widget.deadline);
+    status = widget.status;
+  }
+
+  // DATE PICKER
   Future<void> pickDate() async {
     DateTime? picked = await showDatePicker(
       context: context,
@@ -34,51 +51,35 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     }
   }
 
-  // SAVE TASK
-  Future<void> saveTask() async {
+  // UPDATE TASK
+  Future<void> updateTask() async {
     if (titleController.text.trim().isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Task title cannot be empty")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Title cannot be empty")));
       return;
     }
 
-    if (deadlineController.text.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select deadline date")),
-      );
-      return;
-    }
-
-    if (mounted) setState(() => isLoading = true);
+    if (!mounted) return;
+    setState(() => isLoading = true);
 
     try {
-      final response = await ApiService.addTask(
-        widget.userId,
+      final response = await ApiService.updateTask(
+        widget.id,
         titleController.text.trim(),
         status,
-        deadlineController.text,
+        deadlineController.text.trim(),
       );
 
       if (!mounted) return;
       setState(() => isLoading = false);
 
       if (response["status"] == "success") {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Task added successfully"),
-            backgroundColor: Colors.green,
-          ),
-        );
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response["message"] ?? "Error adding task"),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(response["message"] ?? "Update failed")),
         );
       }
     } catch (e) {
@@ -101,7 +102,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Add Task"),
+        title: const Text("Edit Task"),
         backgroundColor: const Color(0xFF3EB489),
         centerTitle: true,
       ),
@@ -113,7 +114,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
             TextField(
               controller: titleController,
               decoration: const InputDecoration(
-                labelText: "Task Title",
+                labelText: "Title",
                 border: OutlineInputBorder(),
               ),
             ),
@@ -128,11 +129,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 "Completed",
               ].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
               onChanged: (value) {
-                if (value != null && mounted) {
-                  setState(() {
-                    status = value;
-                  });
-                }
+                if (value != null && mounted) setState(() => status = value);
               },
               decoration: const InputDecoration(
                 labelText: "Status",
@@ -147,14 +144,14 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               readOnly: true,
               onTap: pickDate,
               decoration: const InputDecoration(
-                labelText: "Deadline (Tap to pick)",
+                labelText: "Deadline (Tap to pick date)",
                 border: OutlineInputBorder(),
                 suffixIcon: Icon(Icons.calendar_today),
               ),
             ),
             const SizedBox(height: 20),
 
-            // SAVE BUTTON
+            // UPDATE BUTTON
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -162,10 +159,10 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                   backgroundColor: const Color(0xFF3EB489),
                   padding: const EdgeInsets.all(14),
                 ),
-                onPressed: isLoading ? null : saveTask,
+                onPressed: isLoading ? null : updateTask,
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Save Task"),
+                    : const Text("Update Task"),
               ),
             ),
           ],

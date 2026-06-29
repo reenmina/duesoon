@@ -6,6 +6,8 @@ void main() {
 }
 
 class DueSoonApp extends StatelessWidget {
+  const DueSoonApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -13,7 +15,7 @@ class DueSoonApp extends StatelessWidget {
       title: 'DueSoon',
 
       theme: ThemeData(
-        primaryColor: Color(0xFF3EB489), // mint green
+        primaryColor: Color(0xFF3EB489),
         scaffoldBackgroundColor: Color(0xFFF2FFFB),
 
         colorScheme: ColorScheme.light(
